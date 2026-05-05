@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horário UBS - Profissional</title>
+<style>
+body{font-family:Arial,sans-serif;background:#e9f0fb;padding:20px}
+.container{max-width:1000px;margin:auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 6px 25px rgba(0,0,0,0.15)}
+h1{color:#0b4da2;text-align:center;margin:0;font-weight:bold}
+h2{text-align:center;color:#3a6db5;margin-bottom:5px}
+h3{text-align:center;color:#0b4da2;margin-top:0;font-weight:bold}
+input{padding:6px;border:1px solid #ccc;border-radius:5px;width:90%}
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th{background:#0b4da2;color:#fff;padding:12px;font-size:14px}
+td{border:1px solid #0b4da2;padding:10px;text-align:center}
+tr:nth-child(even){background:#f4f8ff}
+.total{font-weight:bold;background:#d6e4ff}
+button{margin-top:20px;padding:14px;width:100%;background:#0b4da2;color:#fff;border:none;border-radius:10px;font-weight:bold;font-size:18px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>Prefeitura de Dourados - MS</h1>
+<h2>UBS Jóquei Club</h2>
+<h3>Auxiliar de Odontologia - Horário de Maio</h3>
+
+<label><b>Nome completo:</b></label>
+<input type="text" id="nome" style="width:100%">
+
+<table>
+<tr>
+<th>Dia</th>
+<th>Manhã Entrada</th>
+<th>Manhã Saída</th>
+<th>Tarde Entrada</th>
+<th>Tarde Saída</th>
+<th>Total</th>
+</tr>
+
+<script>
+const dias=["Segunda","Terça","Quarta","Quinta","Sexta"];
+document.write(dias.map(d=>`
+<tr>
+<td>${d}</td>
+<td><input onchange="calc(this)"></td>
+<td><input onchange="calc(this)"></td>
+<td><input onchange="calc(this)"></td>
+<td><input onchange="calc(this)"></td>
+<td class="totalDia">0h</td>
+</tr>`).join(''));
+</script>
+
+<tr class="total">
+<td colspan="5">Total semanal</td>
+<td id="totalSemana">0h</td>
+</tr>
+</table>
+
+<button onclick="gerarImagem()">Baixar imagem profissional</button>
+</div>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+function horaParaDecimal(h){if(!h.includes(':')) return 0;let [hr,min]=h.split(':').map(Number);return hr+(min||0)/60;}
+
+function calc(el){
+const row=el.closest('tr');
+const inputs=row.querySelectorAll('input');
+let total=0;
+let m1=horaParaDecimal(inputs[0].value);
+let m2=horaParaDecimal(inputs[1].value);
+let t1=horaParaDecimal(inputs[2].value);
+let t2=horaParaDecimal(inputs[3].value);
+if(m2>m1) total+=(m2-m1);
+if(t2>t1) total+=(t2-t1);
+row.querySelector('.totalDia').innerText=total.toFixed(1)+'h';
+calcSemana();
+}
+
+function calcSemana(){
+let total=0;
+document.querySelectorAll('.totalDia').forEach(td=>{
+let v=parseFloat(td.innerText);
+if(!isNaN(v)) total+=v;
+});
+document.getElementById('totalSemana').innerText=total.toFixed(1)+'h';
+}
+
+function gerarImagem(){
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+canvas.width=1400;
+canvas.height=1600;
+
+ctx.fillStyle='#ffffff';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// títulos
+ctx.fillStyle='#0b4da2';
+ctx.font='bold 42px Arial';
+ctx.fillText('Prefeitura de Dourados - MS',250,80);
+ctx.font='bold 32px Arial';
+ctx.fillText('UBS Jóquei Club',450,130);
+ctx.font='bold 28px Arial';
+ctx.fillText('Auxiliar de Odontologia - Horário de Maio',250,180);
+
+ctx.font='bold 24px Arial';
+ctx.fillText('Nome: '+document.getElementById('nome').value,80,240);
+
+// tabela desenhada
+let startX=80;
+let startY=320;
+let rowH=60;
+let colW=[180,260,260,180];
+
+// cabeçalho
+ctx.fillStyle='#0b4da2';
+ctx.fillRect(startX,startY,1100,rowH);
+ctx.fillStyle='#fff';
+ctx.font='bold 22px Arial';
+ctx.fillText('Dia',startX+20,startY+38);
+ctx.fillText('Manhã (Entrada/Saída)',startX+180,startY+38);
+ctx.fillText('Tarde (Entrada/Saída)',startX+520,startY+38);
+ctx.fillText('Total',startX+920,startY+38);
+
+ctx.fillStyle='#000';
+ctx.font='bold 22px Arial';
+
+let y=startY+rowH;
+
+document.querySelectorAll('table tr').forEach((row,i)=>{
+if(i===0) return;
+let cols=row.querySelectorAll('td');
+if(cols.length<6) return;
+
+ctx.strokeRect(startX,y,1100,rowH);
+
+let dia=cols[0].innerText;
+let manha=cols[1].querySelector('input').value+' - '+cols[2].querySelector('input').value;
+let tarde=cols[3].querySelector('input').value+' - '+cols[4].querySelector('input').value;
+let total=cols[5].innerText;
+
+ctx.fillText(dia,startX+20,y+38);
+ctx.fillText(manha,startX+180,y+38);
+ctx.fillText(tarde,startX+520,y+38);
+ctx.fillText(total,startX+920,y+38);
+
+y+=rowH;
+});
+
+ctx.font='bold 26px Arial';
+ctx.fillText('Total semanal: '+document.getElementById('totalSemana').innerText,startX,y+60);
+
+// logo SUS estilizado
+ctx.fillStyle='#0b4da2';
+ctx.fillRect(1100,60,140,30);
+ctx.fillRect(1160,20,30,100);
+ctx.font='bold 28px Arial';
+ctx.fillText('SUS',1120,140);
+
+// download
+const link=document.createElement('a');
+link.download='horario_profissional.png';
+link.href=canvas.toDataURL('image/png');
+link.click();
+}
+</script>
+
+</body>
+</html>
